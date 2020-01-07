@@ -50,6 +50,36 @@ vs = {}
 vs["vertex_label"] = df["Full Name"]
 vs["layout"] = G.layout("rt")
 
+children = G.degree(mode="out")
+
+def height(node):
+    if children[node] == 0:
+        return -1
+    else:
+        return max(height(e[1]) for e in E if e[0] == node) + 1
+
+def levelHelper(curr, node, level):
+    if curr == -1:
+        return 0
+
+    if curr == node:
+        return level
+
+    downlevel = 0
+    for e in E:
+        if e[0] == curr:
+            child = e[1]
+            downlevel = levelHelper(child, node, level+1)
+            if downlevel != 0:
+                return downlevel
+    return downlevel
+
+def level(node):
+    return levelHelper(di["Paternal Grandfather"], node, 1)
+
+layout = vs["layout"]
+vs["layout"] = [[3*layout[k][0], 3*level(k)] for k in range(V)]
+
 # plot graph
 ig.plot(G, **vs)
 
