@@ -34,6 +34,10 @@ V = len(df)
 di = dict()
 for i in range(V):
     di[df["Full Name"][i]] = i
+di[""] = -1
+
+def getChildren(v):
+    return list(map(lambda s: s.strip(), df.loc[v, "Children"].split(",")))
 
 # create edges
 E = [(source, di[dest]) for source in range(V) \
@@ -47,38 +51,56 @@ G.add_edges(E)
 
 # visual styles
 vs = {}
-vs["vertex_label"] = df["Full Name"]
+vs["vertex_label"] = [df.loc[v, "Nickname"] if df.loc[v, "Nickname"] != "" \
+                        else df.loc[v, "Full Name"] for v in range(V)]
 vs["layout"] = G.layout("rt")
 
 children = G.degree(mode="out")
 
-def height(node):
-    if children[node] == 0:
-        return -1
-    else:
-        return max(height(e[1]) for e in E if e[0] == node) + 1
+def topologicalSortUtil(v, visited, stack):
+    if v == -1:
+        return
 
-def levelHelper(curr, node, level):
-    if curr == -1:
-        return 0
+    # mark node v as visited
+    visited[v] = True
 
-    if curr == node:
-        return level
+    # recurse for adjacent nodes
+    for name in getChildren(v):
+        child = di[name]
+        if not visited[child]:
+            topologicalSortUtil(child, visited, stack)
 
-    downlevel = 0
-    for e in E:
-        if e[0] == curr:
-            child = e[1]
-            downlevel = levelHelper(child, node, level+1)
-            if downlevel != 0:
-                return downlevel
-    return downlevel
+    # push vertex to stack to store result
+    stack.append(v)
 
-def level(node):
-    return levelHelper(di["Paternal Grandfather"], node, 1)
+def topologicalSort():
+    visited = [False]*V
+    stack = []
+
+    for i in range(V):
+        if not visited[i]:
+            topologicalSortUtil(i, visited, stack)
+
+    return stack
+
+def longestPath(v):
+    topsort = topologicalSort()
+    dist = [-1]*V
+    dist[v] = 0
+
+    while(len(topsort) != 0):
+        u = topsort.pop()
+        if dist[u] != -1:
+            for name in getChildren(u):
+                child = di[name]
+                if dist[child] < dist[u] + 1:
+                    dist[child] = dist[u] + 1
+    return dist
+
+lengths = [max(longestPath(i)) for i in range(V)]
 
 layout = vs["layout"]
-vs["layout"] = [[3*layout[k][0], 3*level(k)] for k in range(V)]
+vs["layout"] = [[layout[k][0], -lengths[k]] for k in range(V)]
 
 # plot graph
 ig.plot(G, **vs)
