@@ -56,6 +56,31 @@ vs["vertex_label"] = [df.loc[v, "Nickname"] if df.loc[v, "Nickname"] != "" \
 vs["layout"] = G.layout("rt")
 
 children = G.degree(mode="out")
+parents = G.degree(mode="in")
+
+def height(node):
+    if children[node] == 0:
+        return -1
+    else:
+        return max(height(e[1]) for e in E if e[0] == node) + 1
+
+def levelHelper(curr, node, level):
+    if curr == -1:
+        return 0
+
+    if curr == node:
+        return level
+
+    downlevel = 0
+    for i in getChildren(curr):
+            child = di[i]
+            downlevel = levelHelper(child, node, level+1)
+            if downlevel != 0:
+                return downlevel
+    return downlevel
+
+def level(node, ref):
+    return levelHelper(ref, node, 1)
 
 def topologicalSortUtil(v, visited, stack):
     if v == -1:
@@ -97,10 +122,28 @@ def longestPath(v):
                     dist[child] = dist[u] + 1
     return dist
 
+# Returns greatest ancestors along paternal/maternal lines along with distance
+def getGreatestAncestors(v):
+    paternal = maternal = 0
+    p = m = v
+    while di[df.loc[p, "Father"]] != -1:
+        paternal += 1
+        p = di[df.loc[p, "Father"]]
+    while di[df.loc[m, "Mother"]] != -1:
+        maternal += 1
+        m = di[df.loc[m, "Mother"]]
+    return {"Paternal": (p, paternal), "Maternal": (m, maternal)}
+
+def getGreatestAncestor(v):
+    ga = getGreatestAncestors(v)
+    maxline = max(ga, key=lambda k: ga[k][1])
+    return ga[maxline][0]
+
 lengths = [max(longestPath(i)) for i in range(V)]
+levels = [level(v, getGreatestAncestor(v)) for v in range(V)]
 
 layout = vs["layout"]
-vs["layout"] = [[layout[k][0], -lengths[k]] for k in range(V)]
+vs["layout"] = [[layout[k][0], levels[k]] for k in range(V)]
 
 # plot graph
 ig.plot(G, **vs)
