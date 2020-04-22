@@ -148,7 +148,7 @@ layout = vs["layout"]
 vs["layout"] = [[layout[k][0], levels[k]] for k in range(V)]
 
 # plot graph
-ig.plot(G, **vs)
+# ig.plot(G, **vs)
 
 WIDTH, HEIGHT = 256, 256
 
@@ -161,17 +161,11 @@ with cairo.SVGSurface("test.svg", WIDTH, HEIGHT) as surface:
     cr.rectangle(0.25, 0.25, 0.5, 0.5)
     cr.stroke()
 
-    cr.set_source_rgb(0.1, 0.1, 0.1)
-
-    cr.select_font_face("Purisa", cairo.FONT_SLANT_NORMAL,
-        cairo.FONT_WEIGHT_NORMAL)
-    cr.set_font_size(13)
-
-    cr.set_source_rgb(1, 0, 0)
-    cr.set_font_size(0.25)
+    cr.set_source_rgb(0, 0, 0)
+    cr.set_font_size(0.05)
     cr.select_font_face("Arial",
                         cairo.FONT_SLANT_NORMAL,
                         cairo.FONT_WEIGHT_NORMAL)
-    cr.move_to(0.5, 0.5)
+    cr.move_to(0.25, 0.25)
     cr.show_text("Drawing text")
 
