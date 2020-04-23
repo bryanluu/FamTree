@@ -150,22 +150,101 @@ vs["layout"] = [[layout[k][0], levels[k]] for k in range(V)]
 # plot graph
 # ig.plot(G, **vs)
 
-WIDTH, HEIGHT = 256, 256
+AGE_GAP = 10
+
+# sort birth years
+years = np.array([int(df.loc[v, "Year Born"]) for v in range(V)])
+i = np.argsort(years)
+
+# max tree width
+tw = 0
+
+# width at the given vertex's age group
+W = np.ones(V, int)
+
+# age group
+k = 0
+K = np.zeros(V, int) # age group array
+
+# find age group and neighbors for each vertex
+v = 0
+while v < V-1:
+#     print(years[i][v])
+
+    vstart = v
+
+    while(v+1 < V):
+#         print(W[i])
+        k = vstart
+        # check if next birth is within age gap, add to width if it is
+        if years[i][v+1] - years[i][v] < AGE_GAP:
+            W[i[vstart:v+2]] = W[i[vstart]]
+            K[i[vstart:v+2]] = k
+            W[i[vstart:v+2]] += 1
+            if W[i[vstart]] > tw:
+                tw = W[i[vstart]]
+            v += 1
+        else:
+            v += 1
+            break
+
+print("Neighbors:", W[i])
+print("Age Groups:", K[i])
+
+print("Tree Width:", tw)
+
+TREE_WIDTH = max(tw*100, (np.max(years) - np.min(years))*10)
+TREE_HEIGHT = TREE_WIDTH
+WIDTH, HEIGHT = TREE_WIDTH, TREE_HEIGHT
+NEIGHBOR_SPACING = TREE_WIDTH/tw
+BORDER_SCALE = 0.1
+
+# Vertex positions
+vx = np.zeros(V)
+vy = np.array([years[v] for v in range(V)])
+
+# Get x position based on relative width compared to neighbors
+X = np.arange(V)
+for v in range(V):
+    g = (K == K[v])
+    if v > np.min(X[g]):
+        continue
+    else:
+        for n in range(W[v]):
+            vx[X[g][n]] = TREE_WIDTH/2 - NEIGHBOR_SPACING*W[v]/2 + n*NEIGHBOR_SPACING
+
+# Normalize positions
+mx, Mx = np.min(vx), np.max(vx)
+my, My = np.min(vy), np.max(vy)
+vx = (BORDER_SCALE*WIDTH + (vx - mx)/(Mx - mx)*WIDTH)/((1+2*BORDER_SCALE)*WIDTH)
+vy = (BORDER_SCALE*HEIGHT + (vy - my)/(My - my)*HEIGHT)/((1+2*BORDER_SCALE)*HEIGHT)
+
+# Vertex size
+vr = 0.005
+
+FONT_SIZE = 0.015
+labels = [df.loc[v, "Nickname"] if len(df.loc[v, "Nickname"]) > 0 else df.loc[v, "Full Name"] for v in range(V)]
+
 
 with cairo.SVGSurface("test.svg", WIDTH, HEIGHT) as surface:
     cr = cairo.Context(surface)
 
     cr.scale(WIDTH, HEIGHT)  # Normalizing the canvas
-    cr.set_line_width(0.002)
-    cr.set_source_rgb(0, 0, 0)
-    cr.rectangle(0.25, 0.25, 0.5, 0.5)
-    cr.stroke()
 
-    cr.set_source_rgb(0, 0, 0)
-    cr.set_font_size(0.05)
-    cr.select_font_face("Arial",
-                        cairo.FONT_SLANT_NORMAL,
-                        cairo.FONT_WEIGHT_NORMAL)
-    cr.move_to(0.25, 0.25)
-    cr.show_text("Drawing text")
+    # Draw vertices
+    for v in range(V):
+        # Draw node
+        cr.arc(vx[v], vy[v], vr, 0, 2*math.pi)
+        cr.set_source_rgb(0.8, 0, 0)
+        cr.fill()
 
+        # Draw label
+        cr.set_source_rgb(0, 0, 0)
+        cr.select_font_face("Arial",
+                cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+        cr.set_font_size(0.015)
+        _xbearing, _ybearing, _width, _height, _xadvance, _yadvance = (
+                    cr.text_extents(labels[v]))
+        cr.move_to(vx[v] - _xbearing - _width / 2,
+                    vy[v] - 0.02 - _ybearing - _height / 2)
+        cr.show_text(labels[v])
