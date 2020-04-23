@@ -59,6 +59,7 @@ vs["layout"] = G.layout("rt")
 
 children = G.degree(mode="out")
 parents = G.degree(mode="in")
+spouses = {v:int(di[df.loc[v, "Spouse"]]) for v in range(V)}
 
 def height(node):
     if children[node] == 0:
@@ -222,6 +223,14 @@ vy = (BORDER_SCALE*HEIGHT + (vy - my)/(My - my)*HEIGHT)/((1+2*BORDER_SCALE)*HEIG
 # Vertex size
 vr = 0.005
 
+# Branch heights
+top_branch = {-1:-1}
+low_branch = {-1:-1}
+for v in range(V):
+    top_branch[v] = max(vy[v], vy[spouses[v]]) + 1/(My-my)
+for v in range(V):
+    low_branch[v] = min([vy[di[c]] for c in getChildren(v)]) - 5/(My-my)
+
 FONT_SIZE = 0.015
 labels = [df.loc[v, "Nickname"] if len(df.loc[v, "Nickname"]) > 0 else df.loc[v, "Full Name"] for v in range(V)]
 
@@ -233,6 +242,36 @@ with cairo.SVGSurface("test.svg", WIDTH, HEIGHT) as surface:
 
     # Draw vertices
     for v in range(V):
+        # if node has children, draw tree paths
+        if children[v] > 0:
+            # Draw joining line
+            cr.set_source_rgb(0, 0, 0)
+            cr.move_to(vx[v], vy[v])
+            cr.set_line_width(0.001)
+            cr.line_to(vx[v], top_branch[v])
+            cr.stroke()
+            cr.move_to(vx[v], top_branch[v])
+            cr.line_to((vx[v]+vx[spouses[v]])/2, top_branch[v])
+            cr.stroke()
+
+            # Draw line to children
+            cr.move_to((vx[v]+vx[spouses[v]])/2, top_branch[v])
+            cr.line_to((vx[v]+vx[spouses[v]])/2, low_branch[v])
+            cr.stroke()
+
+        if parents[v] > 0:
+            # draw pre-connector branch
+            pa, ma = di[df.loc[v, "Father"]], di[df.loc[v, "Mother"]]
+            cl = max(low_branch[pa], low_branch[ma])
+            cr.move_to((vx[pa]+vx[ma])/2, cl)
+            cr.line_to(vx[v], cl)
+            cr.stroke()
+
+            # draw node connection
+            cr.move_to(vx[v], cl)
+            cr.line_to(vx[v], vy[v])
+            cr.stroke()
+
         # Draw node
         cr.arc(vx[v], vy[v], vr, 0, 2*math.pi)
         cr.set_source_rgb(0.8, 0, 0)
