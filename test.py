@@ -61,11 +61,18 @@ children = G.degree(mode="out")
 parents = G.degree(mode="in")
 spouses = {v:int(di[df.loc[v, "Spouse"]]) for v in range(V)}
 
-def height(node):
-    if children[node] == 0:
-        return -1
+def height(node, down=True):
+    if down:
+        if children[node] == 0:
+            return -1
+        else:
+            return max(height(e[1]) for e in E if e[0] == node) + 1
     else:
-        return max(height(e[1]) for e in E if e[0] == node) + 1
+        if parents[node] == 0:
+            return -1
+        else:
+            pa, ma = di[df.loc[node, "Father"]], di[df.loc[node, "Mother"]]
+            return max(height(pa, down), height(ma, down)) + 1
 
 def levelHelper(curr, node, level):
     if curr == -1:
@@ -231,6 +238,16 @@ for v in range(V):
 for v in range(V):
     low_branch[v] = min([vy[di[c]] for c in getChildren(v)]) - 5/(My-my)
 
+# Node colors
+colors = {-1:np.array([0,0,0])}
+for v in range(V):
+    if parents[i[v]] == 0:
+        colors[i[v]] = np.random.random(3)
+    else:
+        pa = di[df.loc[i[v], "Father"]]
+        ma = di[df.loc[i[v], "Mother"]]
+        colors[i[v]] = (colors[pa]+colors[ma])/2
+
 FONT_SIZE = 0.015
 labels = [df.loc[v, "Nickname"] if len(df.loc[v, "Nickname"]) > 0 else df.loc[v, "Full Name"] for v in range(V)]
 
@@ -240,12 +257,11 @@ with cairo.SVGSurface("test.svg", WIDTH, HEIGHT) as surface:
 
     cr.scale(WIDTH, HEIGHT)  # Normalizing the canvas
 
-    # Draw vertices
     for v in range(V):
         # if node has children, draw tree paths
         if children[v] > 0:
             # Draw joining line
-            cr.set_source_rgb(0, 0, 0)
+            cr.set_source_rgb(*((colors[v]+colors[spouses[v]])/2))
             cr.move_to(vx[v], vy[v])
             cr.set_line_width(0.001)
             cr.line_to(vx[v], top_branch[v])
@@ -261,6 +277,7 @@ with cairo.SVGSurface("test.svg", WIDTH, HEIGHT) as surface:
 
         if parents[v] > 0:
             # draw pre-connector branch
+            cr.set_source_rgb(*colors[v])
             pa, ma = di[df.loc[v, "Father"]], di[df.loc[v, "Mother"]]
             cl = max(low_branch[pa], low_branch[ma])
             cr.move_to((vx[pa]+vx[ma])/2, cl)
@@ -268,13 +285,14 @@ with cairo.SVGSurface("test.svg", WIDTH, HEIGHT) as surface:
             cr.stroke()
 
             # draw node connection
+            cr.set_line_width(0.001)
             cr.move_to(vx[v], cl)
             cr.line_to(vx[v], vy[v])
             cr.stroke()
 
         # Draw node
         cr.arc(vx[v], vy[v], vr, 0, 2*math.pi)
-        cr.set_source_rgb(0.8, 0, 0)
+        cr.set_source_rgb(*colors[v])
         cr.fill()
 
         # Draw label
@@ -287,3 +305,146 @@ with cairo.SVGSurface("test.svg", WIDTH, HEIGHT) as surface:
         cr.move_to(vx[v] - _xbearing - _width / 2,
                     vy[v] - 0.02 - _ybearing - _height / 2)
         cr.show_text(labels[v])
+
+# Root variable
+root = di["Me"]
+
+# Ancestry Tree of root
+VERTICAL_SPACING = 100
+th = height(root, down=False)+1
+tw = 2**th
+md = max(tw, th)
+TREE_WIDTH = md*VERTICAL_SPACING
+TREE_HEIGHT = md*VERTICAL_SPACING
+WIDTH, HEIGHT = TREE_WIDTH, TREE_HEIGHT
+NEIGHBOR_SPACING = TREE_WIDTH/tw
+BORDER_SCALE = 0.1
+FONT_SIZE = 0.015
+
+# Labels
+labels = [df.loc[v, "Nickname"] if len(df.loc[v, "Nickname"]) > 0 else df.loc[v, "Full Name"] for v in range(V)]
+
+# Vertex positions
+vx = np.zeros(V)
+vy = np.zeros(V)
+
+# Set x position based on relative width compared to neighbors
+def _ancestorSetXPos(v, lvl=1):
+    if children[v] == 0:
+        vx[v] = WIDTH/2
+
+    pa, ma = di[df.loc[v, "Father"]], di[df.loc[v, "Mother"]]
+    if(pa != -1):
+        if(parents[v] == 1):
+            vx[pa] = vx[v]
+        else:
+            vx[pa] = vx[v]-NEIGHBOR_SPACING*lvl
+        _ancestorSetXPos(pa, lvl/2)
+    if(ma != -1):
+        if(parents[v] == 1):
+            vx[ma] = vx[v]
+        else:
+            vx[ma] = vx[v]+NEIGHBOR_SPACING*lvl
+        _ancestorSetXPos(ma, lvl/2)
+
+# Set y position based on height:
+def _ancestorSetYPos(v):
+    if children[v] == 0:
+        vy[v] = TREE_HEIGHT
+
+    pa, ma = di[df.loc[v, "Father"]], di[df.loc[v, "Mother"]]
+    if(pa != -1):
+        vy[pa] = vy[v] - TREE_HEIGHT/th
+        _ancestorSetYPos(pa)
+    if(ma != -1):
+        vy[ma] = vy[v] - TREE_HEIGHT/th
+        _ancestorSetYPos(ma)
+
+_ancestorSetXPos(root)
+_ancestorSetYPos(root)
+
+print(vx, vy)
+
+# Normalize positions
+mx, Mx = np.min(vx), np.max(vx)
+my, My = np.min(vy), np.max(vy)
+vx = (BORDER_SCALE*WIDTH + (vx - mx)/(Mx - mx)*WIDTH)/((1+2*BORDER_SCALE)*WIDTH)
+vy = (BORDER_SCALE*HEIGHT + (vy - my)/(My - my)*HEIGHT)/((1+2*BORDER_SCALE)*HEIGHT)
+
+# Vertex size
+vr = 0.01
+
+# Branch heights
+# top_branch = {-1:-1}
+# low_branch = {-1:-1}
+# for v in range(V):
+#     top_branch[v] = max(vy[v], vy[spouses[v]]) + 1/(My-my)
+# for v in range(V):
+#     low_branch[v] = min([vy[di[c]] for c in getChildren(v)]) - 5/(My-my)
+
+# Node colors
+colors = {-1:np.array([0,0,0])}
+for v in range(V):
+    if parents[i[v]] == 0:
+        colors[i[v]] = np.random.random(3)
+    else:
+        pa = di[df.loc[i[v], "Father"]]
+        ma = di[df.loc[i[v], "Mother"]]
+        colors[i[v]] = (colors[pa]+colors[ma])/2
+
+with cairo.SVGSurface("test2.svg", WIDTH, HEIGHT) as surface:
+    cr = cairo.Context(surface)
+
+    cr.scale(WIDTH, HEIGHT)  # Normalizing the canvas
+
+    q = []
+
+    q.append(root)
+
+    while(len(q) > 0):
+        v = q.pop(0)
+
+        # Draw node
+        cr.arc(vx[v], vy[v], vr, 0, 2*math.pi)
+        cr.set_source_rgb(*colors[v])
+        cr.fill()
+
+        # Draw label
+        cr.set_source_rgb(0, 0, 0)
+        cr.select_font_face("Arial",
+                cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+        cr.set_font_size(0.015)
+        _xbearing, _ybearing, _width, _height, _xadvance, _yadvance = (
+                    cr.text_extents(labels[v]))
+        cr.move_to(vx[v] - _xbearing - _width / 2,
+                    vy[v] - 0.02 - _ybearing - _height / 2)
+        cr.show_text(labels[v])
+
+
+        print("Nodes:", labels[v])
+
+        pa, ma = di[df.loc[v, "Father"]], di[df.loc[v, "Mother"]]
+
+        # Draw branches
+        if(parents[v] > 0):
+            cr.set_source_rgb(*colors[v])
+            cr.move_to(vx[v], vy[v])
+            cr.set_line_width(0.001)
+            cr.line_to(vx[v], (vy[v] + max(vy[pa], vy[ma]))/2)
+            cr.stroke()
+            cr.move_to(vx[v], (vy[v] + max(vy[pa], vy[ma]))/2)
+            cr.line_to(vx[pa], (vy[v] + max(vy[pa], vy[ma]))/2)
+            cr.stroke()
+            cr.move_to(vx[pa], (vy[v] + max(vy[pa], vy[ma]))/2)
+            cr.line_to(vx[pa], vy[pa])
+            cr.stroke()
+            cr.move_to(vx[v], (vy[v] + max(vy[pa], vy[ma]))/2)
+            cr.line_to(vx[ma], (vy[v] + max(vy[pa], vy[ma]))/2)
+            cr.stroke()
+            cr.move_to(vx[ma], (vy[v] + max(vy[pa], vy[ma]))/2)
+            cr.line_to(vx[ma], vy[ma])
+            cr.stroke()
+            if pa != -1:
+                q.append(pa)
+            if ma != -1:
+                q.append(ma)
