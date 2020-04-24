@@ -2,8 +2,6 @@
 import numpy as np
 import pandas as pd
 import cairo
-import math
-
 
 df = pd.read_csv("data/test.csv")
 
