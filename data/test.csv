@@ -1,0 +1,25 @@
+Full Name,Nickname,Year Born,Father,Mother,Spouse,Children
+Father,Dad,1965,Paternal Grandfather,Paternal Grandmother,Mother,"Me, Brother, Sister"
+Mother,Mom,1969,Maternal Grandfather,Maternal Grandmother,Father,"Me, Brother, Sister"
+"Me
+",,1994,"Father
+",Mother,,
+"Sister
+",Sis,1990,Father,Mother,,
+Brother,Bro,1998,Father,Mother,,
+Paternal Grandfather,PGP,1938,,,Paternal Grandmother,"Father, Ben
+"
+Paternal Grandmother,PGM,1940,,,Paternal Grandfather,"Father, Ben
+"
+"Maternal Grandfather
+",MGP,1941,,,"Maternal Grandmother
+","Mother, Sue"
+Maternal Grandmother,MGM,1946,,,Maternal Grandfather,"Mother, Sue"
+Ben,,1960,"Paternal Grandfather
+","Paternal Grandmother
+",,
+"Sue
+",,1973,Maternal Grandfather,Maternal Grandmother,Peter,Cousin
+Peter,,1968,,,Sue,Cousin
+Cousin,Charlie,2000,Peter,Sue,"
+",

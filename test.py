@@ -1,17 +1,8 @@
 #!/usr/bin/env python
-# coding: utf-8
-
-# In[32]:
-
-
 import numpy as np
 import pandas as pd
-import igraph as ig
 import cairo
 import math
-
-
-# In[78]:
 
 
 df = pd.read_csv("data/test.csv")
@@ -22,13 +13,6 @@ df = df.astype(str)
 df = df.applymap(lambda s: "" if s == "nan" else s)
 # remove newlines
 df = df.applymap(lambda s: s.rstrip('\n'))
-
-# display data
-df
-
-
-# In[128]:
-
 
 # number of vertices
 V = len(df)
@@ -41,25 +25,19 @@ di[""] = -1
 def getChildren(v):
     return list(map(lambda s: s.strip(), df.loc[v, "Children"].split(",")))
 
-# create edges
-E = [(source, di[dest]) for source in range(V) \
-        for dest in list(map(lambda s: s.strip(), df.loc[source, "Children"].split(","))) \
-        if dest != ""]
+children = [0]*V
+parents = [0]*V
+spouses = {}
 
-# create graph
-G = ig.Graph(directed = True)
-G.add_vertices(V)
-G.add_edges(E)
-
-# visual styles
-vs = {}
-vs["vertex_label"] = [df.loc[v, "Nickname"] if df.loc[v, "Nickname"] != "" \
-                        else df.loc[v, "Full Name"] for v in range(V)]
-vs["layout"] = G.layout("rt")
-
-children = G.degree(mode="out")
-parents = G.degree(mode="in")
-spouses = {v:int(di[df.loc[v, "Spouse"]]) for v in range(V)}
+# fill out number of children, parents, and spouse info
+for v in range(V):
+    c = getChildren(v)
+    children[v] = (len(c) if c != [''] else 0)
+    if di[df.loc[v, "Father"]] != -1:
+        parents[v] += 1
+    if di[df.loc[v, "Father"]] != -1:
+        parents[v] += 1
+    spouses[v] = int(di[df.loc[v, "Spouse"]])
 
 def height(node, down=True):
     if down:
@@ -73,90 +51,6 @@ def height(node, down=True):
         else:
             pa, ma = di[df.loc[node, "Father"]], di[df.loc[node, "Mother"]]
             return max(height(pa, down), height(ma, down)) + 1
-
-def levelHelper(curr, node, level):
-    if curr == -1:
-        return 0
-
-    if curr == node:
-        return level
-
-    downlevel = 0
-    for i in getChildren(curr):
-            child = di[i]
-            downlevel = levelHelper(child, node, level+1)
-            if downlevel != 0:
-                return downlevel
-    return downlevel
-
-def level(node, ref):
-    return levelHelper(ref, node, 1)
-
-def topologicalSortUtil(v, visited, stack):
-    if v == -1:
-        return
-
-    # mark node v as visited
-    visited[v] = True
-
-    # recurse for adjacent nodes
-    for name in getChildren(v):
-        child = di[name]
-        if not visited[child]:
-            topologicalSortUtil(child, visited, stack)
-
-    # push vertex to stack to store result
-    stack.append(v)
-
-def topologicalSort():
-    visited = [False]*V
-    stack = []
-
-    for i in range(V):
-        if not visited[i]:
-            topologicalSortUtil(i, visited, stack)
-
-    return stack
-
-def longestPath(v):
-    topsort = topologicalSort()
-    dist = [-1]*V
-    dist[v] = 0
-
-    while(len(topsort) != 0):
-        u = topsort.pop()
-        if dist[u] != -1:
-            for name in getChildren(u):
-                child = di[name]
-                if dist[child] < dist[u] + 1:
-                    dist[child] = dist[u] + 1
-    return dist
-
-# Returns greatest ancestors along paternal/maternal lines along with distance
-def getGreatestAncestors(v):
-    paternal = maternal = 0
-    p = m = v
-    while di[df.loc[p, "Father"]] != -1:
-        paternal += 1
-        p = di[df.loc[p, "Father"]]
-    while di[df.loc[m, "Mother"]] != -1:
-        maternal += 1
-        m = di[df.loc[m, "Mother"]]
-    return {"Paternal": (p, paternal), "Maternal": (m, maternal)}
-
-def getGreatestAncestor(v):
-    ga = getGreatestAncestors(v)
-    maxline = max(ga, key=lambda k: ga[k][1])
-    return ga[maxline][0]
-
-lengths = [max(longestPath(i)) for i in range(V)]
-levels = [level(v, getGreatestAncestor(v)) for v in range(V)]
-
-layout = vs["layout"]
-vs["layout"] = [[layout[k][0], levels[k]] for k in range(V)]
-
-# plot graph
-# ig.plot(G, **vs)
 
 AGE_GAP = 10
 
@@ -206,6 +100,10 @@ TREE_HEIGHT = TREE_WIDTH
 WIDTH, HEIGHT = TREE_WIDTH, TREE_HEIGHT
 NEIGHBOR_SPACING = TREE_WIDTH/tw
 BORDER_SCALE = 0.1
+FONT_SIZE = 0.015
+
+# Labels
+labels = [df.loc[v, "Nickname"] if len(df.loc[v, "Nickname"]) > 0 else df.loc[v, "Full Name"] for v in range(V)]
 
 # Vertex positions
 vx = np.zeros(V)
@@ -247,10 +145,6 @@ for v in range(V):
         pa = di[df.loc[i[v], "Father"]]
         ma = di[df.loc[i[v], "Mother"]]
         colors[i[v]] = (colors[pa]+colors[ma])/2
-
-FONT_SIZE = 0.015
-labels = [df.loc[v, "Nickname"] if len(df.loc[v, "Nickname"]) > 0 else df.loc[v, "Full Name"] for v in range(V)]
-
 
 with cairo.SVGSurface("test.svg", WIDTH, HEIGHT) as surface:
     cr = cairo.Context(surface)
@@ -374,14 +268,6 @@ vy = (BORDER_SCALE*HEIGHT + (vy - my)/(My - my)*HEIGHT)/((1+2*BORDER_SCALE)*HEIG
 # Vertex size
 vr = 0.01
 
-# Branch heights
-# top_branch = {-1:-1}
-# low_branch = {-1:-1}
-# for v in range(V):
-#     top_branch[v] = max(vy[v], vy[spouses[v]]) + 1/(My-my)
-# for v in range(V):
-#     low_branch[v] = min([vy[di[c]] for c in getChildren(v)]) - 5/(My-my)
-
 # Node colors
 colors = {-1:np.array([0,0,0])}
 for v in range(V):
@@ -421,7 +307,7 @@ with cairo.SVGSurface("test2.svg", WIDTH, HEIGHT) as surface:
         cr.show_text(labels[v])
 
 
-        print("Nodes:", labels[v])
+#         print("Nodes:", labels[v])
 
         pa, ma = di[df.loc[v, "Father"]], di[df.loc[v, "Mother"]]
 
