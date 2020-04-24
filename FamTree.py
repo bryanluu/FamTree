@@ -116,12 +116,7 @@ while v < V-1:
             break
 
 if(args.ancestor is None):
-    print("Vertices sorted by age:\n", df.loc[i, "Full Name"])
-
-    print("Neighbors:", W[i])
-    print("Age Groups:", K[i])
-
-    print("Tree Width:", tw)
+    print("Family members:", V)
 
     ######################################## FULL TREE ########################################
 
