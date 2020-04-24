@@ -8,7 +8,7 @@ import argparse
 parser = argparse.ArgumentParser(description="This program creates an SVG of family tree from CSV file.")
 parser.add_argument("in_file", help="CSV input file", type=str)
 parser.add_argument("out_file", help="Output filename (without extension)", type=str)
-parser.add_argument("-x", "--extension", metavar="ext", help="Output file extension (SVG by default).", default=["svg"],nargs=1, type=str)
+parser.add_argument("-x", "--extension", metavar="ext", help="Output file extension (SVG by default).", default=["pdf"],nargs=1, type=str)
 parser.add_argument("-a", "--ancestor", metavar="root", help="Display ancestor tree of root.", nargs=1, type=str)
 args = parser.parse_args()
 
@@ -25,6 +25,8 @@ def _getCanvas(WIDTH, HEIGHT):
         surface = cairo.PDFSurface(outfile, WIDTH, HEIGHT)
     elif ext.lower() == "png":
         surface = cairo.ImageSurface(cairo.Format.ARGB32, WIDTH, HEIGHT)
+    else:
+        raise Exception("invalid extension \'." + ext + "\'")
 
     return surface
 
@@ -235,7 +237,12 @@ if(args.ancestor is None):
 else:
     # print(args.ancestor)
     # Root variable
-    root = di[args.ancestor[0]]
+    ancroot = args.ancestor[0]
+    root = -1
+    try:
+        root = di[ancroot]
+    except KeyError:
+        raise Exception("Invalid family member name \'" + ancroot + "\'.")
 
     # Ancestry Tree of root
     VERTICAL_SPACING = 100
