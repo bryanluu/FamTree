@@ -14,7 +14,7 @@ args = parser.parse_args()
 
 df = pd.read_csv(args.in_file)
 ext = args.extension[0]
-outfile = args.out_file + "." + ext
+outfile = "images/" + args.out_file + "." + ext
 
 def _getCanvas(WIDTH, HEIGHT):
 
