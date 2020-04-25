@@ -4,10 +4,10 @@ A Python program to load and display a family-tree from a CSV-file.
 Written for a personal project by [Bryan Luu](https://github.com/bryanluu).
 
 ## Contents
-- Setup
-- CSV Format
-- Usage
-- Example
+- [Setup](#setup)
+- [CSV Format](#csv-format)
+- [Usage](#usage)
+- [Example](#example)
 
 ## Setup
 ### Python
