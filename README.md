@@ -55,13 +55,13 @@ To load up your family tree, it is important that you follow the desired CSV for
 | Cousin               | Charlie  |	2000      |	Peter                | Sue 		              |                       |                         |
 
 Each row represents the information for one family member, and each column represents the info type:
-- *Full Name*: the full name which should be unique
-- *Nickname*: an optional moniker which will be displayed on the tree (it can be blank, which then displays the full name on the tree instead)
-- *Year Born*: the year (in A.D.) the family member was born
-- *Father*: the full name of the family member's father. If unknown, leave blank.
-- *Mother*: the full name of the family member's mother. If unknown, leave blank.
-- *Spouse*: the full name of the family member's spouse. If none/unknown, leave blank.
-- *Children*: a comma-separated list of the full names of the family member's children. If no children, leave blank.
+- **Full Name**: the full name which should be unique
+- **Nickname**: an optional moniker which will be displayed on the tree (it can be blank, which then displays the full name on the tree instead)
+- **Year Born**: the year (in A.D.) the family member was born
+- **Father**: the full name of the family member's father. If unknown, leave blank.
+- **Mother**: the full name of the family member's mother. If unknown, leave blank.
+- **Spouse**: the full name of the family member's spouse. If none/unknown, leave blank.
+- **Children**: a comma-separated list of the full names of the family member's children. If no children, leave blank.
 
 ## Usage
 If you have your family tree as `tree.csv`, you can run the program and save it as a PDF `tree.pdf` by typing the following on the command line:
