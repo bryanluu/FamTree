@@ -3,18 +3,27 @@ import numpy as np
 import pandas as pd
 import cairo
 import argparse
+import time
 
 # Process command-line arguments
-parser = argparse.ArgumentParser(description="This program creates an SVG of family tree from CSV file.")
+parser = argparse.ArgumentParser(description="This program creates a graphic of a family tree from CSV file.")
 parser.add_argument("in_file", help="CSV input file", type=str)
 parser.add_argument("out_file", help="Output filename (without extension)", type=str)
-parser.add_argument("-x", "--extension", metavar="ext", help="Output file extension (SVG by default).", default=["pdf"],nargs=1, type=str)
+parser.add_argument("-x", "--extension", metavar="ext", help="Output file extension (PDF by default).", default=["pdf"],nargs=1, type=str)
 parser.add_argument("-a", "--ancestor", metavar="root", help="Display ancestor tree of root.", nargs=1, type=str)
+parser.add_argument("-s", "--seed", metavar="seed", help="Random seed to use for colors.", nargs=1, type=int)
 args = parser.parse_args()
 
 df = pd.read_csv(args.in_file)
 ext = args.extension[0]
 outfile = "images/" + args.out_file + "." + ext
+if args.seed is not None:
+    seed = args.seed[0]
+else:
+    seed = int(time.time())
+
+print("Seed:", seed)
+rs = np.random.RandomState(np.random.MT19937(np.random.SeedSequence(seed)))
 
 def _getCanvas(WIDTH, HEIGHT):
 
@@ -167,7 +176,7 @@ if(args.ancestor is None):
     colors = {-1:np.array([0,0,0])}
     for v in range(V):
         if parents[i[v]] == 0:
-            colors[i[v]] = np.random.random(3)
+            colors[i[v]] = rs.random_sample(3)
         else:
             pa = di[df.loc[i[v], "Father"]]
             ma = di[df.loc[i[v], "Mother"]]
@@ -308,7 +317,7 @@ else:
     colors = {-1:np.array([0,0,0])}
     for v in range(V):
         if parents[i[v]] == 0:
-            colors[i[v]] = np.random.random(3)
+            colors[i[v]] = rs.random_sample(3)
         else:
             pa = di[df.loc[i[v], "Father"]]
             ma = di[df.loc[i[v], "Mother"]]
