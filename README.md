@@ -69,6 +69,7 @@ If you have your family tree as `tree.csv`, you can run the program and save it 
 - You can save it to a different format by giving the option `-x ext` or `--extension ext`. The valid `ext` options are `svg`, `pdf`, or `png`.
 - You can specify the program to display an ancestral tree instead of the full tree by specifying `-a root` or `--ancestor root` where `root` is
 the full-name of the family member you want to build an ancestor tree of.
+- You can specify the seed to use for the color selector with `-s seed` or `--seed seed` where `seed` is the random integer seed. Each run displays the seed, so you can save it for another run.
 
 ## Example
 As an example, let's show the tree of the above table. This is located in the file `data/example.csv`.
