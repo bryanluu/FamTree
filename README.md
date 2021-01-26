@@ -74,7 +74,7 @@ the full-name of the family member you want to build an ancestor tree of.
 ## Example
 As an example, let's show the tree of the above table. This is located in the file `data/example.csv`.
 
-First, we'll output the entire tree into an svg: `python FamTree.py data/example.csv tree -x svg`. The result is show below.
+First, we'll output the entire tree into an svg: `python FamTree.py data/example.csv tree -x svg`. The result is shown below.
 
 ![Example Tree](images/tree.png)
 
